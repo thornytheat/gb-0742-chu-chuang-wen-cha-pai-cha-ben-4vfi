@@ -12,7 +12,8 @@
 | M4 垂直梯度 | 选择柜时，对照剖面、区间、原行 | `GET /api/runs/{run_id}/gradient/{cabinet}/evidence` | `app/modules/gradient/interval.py` `app/modules/gradient/grade.py` | `tests/test_gradient.py` |
 | M5 异常持续 | 定位连续与瞬时异常段及其原行 | `GET /api/runs/{run_id}/episodes/{cabinet}` | `app/modules/episodes/segment.py` | `tests/test_episodes.py` |
 | M6 值班单勾稽 | 核对柜时与图档行，查报警误报漏报 | `GET /api/runs/{run_id}/audit` | `app/modules/audit/reconcile.py` | `tests/test_audit.py` |
-| M7 证据归卷 | 运行、复算或下载带摘要的归卷 | `POST /api/runs` `POST /api/runs/{run_id}/rerun` `GET /api/runs/{run_id}/export` | `app/modules/archive/pipeline.py` `app/modules/archive/service.py` `app/modules/archive/proof.py` `app/store.py` | `tests/test_archive.py` |
+| M7 证据归卷 | 运行、复算或下载带摘要的归卷 | `POST /api/runs` `POST /api/runs/{run_id}/rerun` `GET /api/runs/{run_id}/export` | `app/modules/archive/pipeline.py` `app/modules/archive/service.py` `app/modules/archive/proof.py` `app/store.py` `app/modules/coverage/summary.py` | `tests/test_archive.py` `tests/test_coverage.py` |
+| M8 覆盖结论 | 看收报截止点、缺口原因与补发重算差 | `GET /api/runs/{run_id}/coverage` | `app/modules/coverage/summary.py` `app/modules/coverage/handler.py` `app/store.py` | `tests/test_coverage.py` |
 
 ## 陷阱登记
 
@@ -34,6 +35,10 @@
 | TRAP-17 | `night-points.csv` 第二段改中文并换序 | 收报和测量栏对调 | 每段独立映射字段 | `app/modules/intake/readings.py` | `tests/test_intake.py::test_header_switch_changes_field_positions` |
 | TRAP-23 | 探头在 13:00 馆内时间换柜 | 同一时刻两柜采信 | 左闭右开选择新柜 | `app/modules/assignment/windows.py` | `tests/test_assignment.py::test_adjacent_windows_are_half_open_at_exact_move` |
 | TRAP-25 | 在混合部署契约上叠加同柜同层窗 | 任选一个探头 | 标重叠并拒用重叠段 | `app/modules/assignment/windows.py` | `tests/test_assignment.py::test_second_probe_at_same_position_marks_overlap_only` |
+| TRAP-26 | 交接后补发到达，收报截止点前已发结论 | 用全量重算覆盖已发版次，缺口与异常段无声改变 | 按班次分版并固定截止点，补发版列出缺口转可判级与异常段沿革 | `app/modules/coverage/summary.py` `app/store.py` `app/modules/archive/service.py` | `tests/test_coverage.py::test_supplement_run_is_new_version_that_supersedes_and_reconciles` |
+| TRAP-27 | 同班次重跑或并发提交 | 每次重跑新增重复版次 | 截止点与原档摘要相同即复用，版号在写事务内分配 | `app/store.py` `app/modules/archive/service.py` | `tests/test_coverage.py::test_same_shift_rerun_reuses_version_and_keeps_receipt_cutoff` `tests/test_coverage.py::test_same_shift_concurrent_submissions_assign_no_duplicate_version` |
+| TRAP-28 | 补发重算前旧版被篡改 | 在损坏的旧版上算出差额并发布 | 先校验旧版摘要，失败即拒写并保留旧版 | `app/modules/archive/service.py` `app/modules/archive/proof.py` | `tests/test_coverage.py::test_failed_supplement_recheck_keeps_previous_version` |
+| TRAP-29 | 截止点后的迟报读数 | 混入本版配对，结论随后到达而变 | 标 `RECEIPT_AFTER_CUTOFF` 暂缓，行账记 `deferred` 仍守恒 | `app/modules/archive/pipeline.py` | `tests/test_coverage.py::test_readings_after_cutoff_are_deferred_not_silently_dropped` |
 
 真实反例还有迁移前一分钟的下层读数不能与迁移后的上层配对，近中点无证读数不能挤掉同小时有效候选，区间端点的展示舍入不能改变判级，缺证切断连续异常，工单不能重复清销同一段。
 

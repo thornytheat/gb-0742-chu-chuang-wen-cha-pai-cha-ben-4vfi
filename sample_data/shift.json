@@ -25,6 +25,7 @@
   "tolerance_seconds": 240,
   "late_seconds": 900,
   "sustained_hours": 2,
+  "receipt_cutoff": "2026-11-20T18:02:00+08:00",
   "deployments": [
     {
       "probe": "0001",

@@ -3,7 +3,7 @@ from collections import Counter
 from app.timebase import seconds, utc
 
 STATES = ("STABLE", "ABNORMAL", "MISSING")
-DISPOSITIONS = ("accepted", "duplicate", "isolated", "blank", "header")
+DISPOSITIONS = ("accepted", "duplicate", "isolated", "deferred", "blank", "header")
 
 
 def reconcile_tickets(spec, grades, episodes):
@@ -52,9 +52,10 @@ def reconcile(spec, rows, intake, grades, episodes):
     hours["balanced"] = (not (hours["missing_keys"] or hours["extra_keys"] or hours["duplicate_keys"])
                          and len(expected) == sum(tally[state] for state in STATES))
     counted = Counter(row["disposition"] for row in rows)
-    row_audit = {"total": len(rows), "declared": intake["declared"], **{key: counted[key] for key in DISPOSITIONS}}
-    row_audit["balanced"] = len(rows) == sum(row_audit[key] for key in DISPOSITIONS) and (
-        intake["declared"] == counted["accepted"] + counted["duplicate"] + counted["isolated"])
+    keys = DISPOSITIONS if counted["deferred"] else tuple(key for key in DISPOSITIONS if key != "deferred")
+    row_audit = {"total": len(rows), "declared": intake["declared"], **{key: counted[key] for key in keys}}
+    row_audit["balanced"] = len(rows) == sum(row_audit[key] for key in keys) and (
+        intake["declared"] == counted["accepted"] + counted["duplicate"] + counted["isolated"] + counted["deferred"])
     tickets, unreported = reconcile_tickets(spec, grades, episodes)
     return {"hours": hours, "row_audit": row_audit, "tickets": tickets, "unreported": unreported,
             "ticket_counts": dict(Counter(ticket["code"] for ticket in tickets))}

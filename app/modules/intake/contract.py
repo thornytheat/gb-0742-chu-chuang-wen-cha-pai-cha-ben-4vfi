@@ -62,6 +62,7 @@ class Shift(Window):
     tolerance_seconds: int = Field(ge=0, le=900)
     late_seconds: int = Field(ge=0, le=86_400)
     sustained_hours: int = Field(ge=2, le=12)
+    receipt_cutoff: str | None = None
     deployments: list[Deployment] = Field(min_length=1, max_length=64)
     tickets: list[Ticket] = Field(max_length=100)
 
@@ -70,6 +71,8 @@ class Shift(Window):
         duration = seconds(self.end) - seconds(self.start)
         if not (0 < duration <= 168 * 3600) or duration % 3600 or seconds(self.start) % 3600:
             raise ValueError("班次使用整点小时，最长七天")
+        if self.receipt_cutoff is not None and seconds(self.receipt_cutoff) < seconds(self.start):
+            raise ValueError("收报截止点不能早于班次起点")
         cabinets = {item.id for item in self.cabinet_hours}
         if len(cabinets) != len(self.cabinet_hours):
             raise ValueError("柜号重复")

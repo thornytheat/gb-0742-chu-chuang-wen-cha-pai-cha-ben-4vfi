@@ -1,0 +1,20 @@
+<div class="triple coverage-sheet">
+  <section class="panel">
+    <div class="panel__head"><h2>结论版次 <sup>1</sup></h2></div>
+    <div id="coverage-versions" class="scroll"></div>
+  </section>
+  <section class="panel wide-pane">
+    <div class="panel__head"><h2>柜时覆盖 <sup>2</sup></h2><span id="coverage-cutoff">—</span></div>
+    <div id="coverage-summary" class="panel__body"></div>
+    <div id="coverage-slots" class="scroll"></div>
+  </section>
+  <section class="panel">
+    <div class="panel__head"><h2>补发重算差 <sup>3</sup></h2></div>
+    <div id="coverage-diff" class="panel__body scroll" aria-live="polite"></div>
+  </section>
+</div>
+<ol class="footnotes">
+  <li>每版收报截止点固定，同班次重跑复用原版，不新增版次。</li>
+  <li>缺口原因：缺上层、无兼容下层、下层已占用；已配对但置信区间跨阈值为缺证。</li>
+  <li>补发只应把缺口转为可判级；异常段按柜号与起点沿用原段号。</li>
+</ol>

@@ -45,3 +45,13 @@ def test_unknown_cabinet_run_and_sample_are_distinct(client,base):
     failures = [client.get(base + "/pairing/CV-99"),client.get("/api/runs/notfound"),client.post("/api/runs",json={"sample":"bad"})]
     for result,code in zip(failures,["UNKNOWN_CABINET","UNKNOWN_RUN","UNKNOWN_SAMPLE"]):
         assert (result.status_code,result.json()["code"]) == (404,code)
+
+
+def test_coverage_page_and_api_expose_cutoff_and_versions(client, base):
+    page = client.get("/coverage")
+    assert page.status_code == 200 and "<h1>覆盖结论</h1>" in page.text
+    result = client.get(base + "/coverage").json()
+    assert result["coverage"]["cutoff"] == "2026-11-20T10:02:00Z"
+    assert result["coverage"]["alignment"]["aligned"] is True
+    assert [item["version"] for item in result["versions"]] == [1]
+    assert [item["id"] for item in result["episodes"]] == ["CV-17-A01", "CV-17-A02", "CV-17-A03"]

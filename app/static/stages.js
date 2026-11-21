@@ -210,4 +210,94 @@ function archive({history,run}) {
     ['持续门槛',`${run.sustained_hours} h`],['耗时',`${run.elapsed_ms} ms`],['归卷柜号',run.cabinets.map((item) => item.id).join('、')]]));
 }
 
-export const stages = {intake, assignment, pairing, gradient, episodes, audit, archive};
+const reasonWords = (slot) => slot.reason ? words[slot.reason] ?? slot.reason : slot.paired ? '已配对' : '缺证';
+const gapWords = {MISSING_UPPER:'缺上层',NO_COMPATIBLE_LOWER:'无兼容下层',LOWER_CONTENTION:'下层占用'};
+
+function coverageDiff(target, comparison, episodes) {
+  const present = el('div',null,'diff-group');
+  present.append(el('h3','本版异常段'));
+  present.append(episodes.length ? (() => { const list = el('ul',null,'diff-list');
+    for (const item of episodes) list.append(el('li',`${item.id} · ${words[item.kind] ?? item.kind} · ${stamp(item.start)}—${stamp(item.end)} · ${item.axes.map((axis) => words[axis] ?? axis).join('、')}`));
+    return list; })() : el('p','本版无异常段。','empty'));
+  if (!comparison || comparison.from == null) {
+    const gaps = comparison ? comparison.slots.still_gap : [];
+    const first = el('div',null,'diff-group');
+    first.append(el('h3','本版缺口'));
+    first.append(gaps.length ? (() => { const list = el('ul',null,'diff-list');
+      for (const row of gaps) list.append(el('li',`${row.cabinet} · ${stamp(row.start)} · ${gapWords[row.reason] ?? row.reason}`));
+      return list; })() : el('p','无剩余缺口。','empty'));
+    target.replaceChildren(present,el('p','首版结论，按当前收报截止点发布。','empty'),first);
+    return;
+  }
+  const convert = comparison.slots.converted;
+  const still = comparison.slots.still_gap;
+  const episodeDiff = comparison.episodes;
+  const blocks = [entries([['上一版',comparison.cutoff_before ? stamp(comparison.cutoff_before) : '—'],
+    ['本版截止',comparison.cutoff_after ? stamp(comparison.cutoff_after) : '—'],
+    ['可判级',`${comparison.gradable_before} → ${comparison.gradable_after}`],
+    ['缺上层',`${comparison.gaps_before.MISSING_UPPER} → ${comparison.gaps_after.MISSING_UPPER}`],
+    ['无兼容下层',`${comparison.gaps_before.NO_COMPATIBLE_LOWER} → ${comparison.gaps_after.NO_COMPATIBLE_LOWER}`],
+    ['下层占用',`${comparison.gaps_before.LOWER_CONTENTION} → ${comparison.gaps_after.LOWER_CONTENTION}`]])];
+  const group = (title, items, draw, empty) => {
+    const box = el('div',null,'diff-group');
+    box.append(el('h3',title));
+    box.append(items.length ? draw(items) : el('p',empty,'empty'));
+    return box;
+  };
+  blocks.push(group('缺口转为可判级',convert,(rows) => {
+    const list = el('ul',null,'diff-list');
+    for (const row of rows) list.append(el('li',`${row.cabinet} · ${stamp(row.start)} · ${gapWords[row.reason_before] ?? row.reason_before} → ${words[row.state] ?? row.state}`));
+    return list;
+  },'本版无新增可判级柜时。'));
+  blocks.push(group('仍为缺口',still,(rows) => {
+    const list = el('ul',null,'diff-list');
+    for (const row of rows) list.append(el('li',`${row.cabinet} · ${stamp(row.start)} · ${gapWords[row.reason] ?? row.reason}`));
+    return list;
+  },'无剩余缺口。'));
+  if (comparison.slots.regressed.length) blocks.push(group('退回缺口',comparison.slots.regressed,(rows) => {
+    const list = el('ul',null,'diff-list');
+    for (const row of rows) list.append(el('li',`${row.cabinet} · ${stamp(row.start)}`));
+    return list;
+  },''));
+  if (comparison.slots.state_changes.length) blocks.push(group('判级变化',comparison.slots.state_changes,(rows) => {
+    const list = el('ul',null,'diff-list');
+    for (const row of rows) list.append(el('li',`${row.cabinet} · ${stamp(row.start)} · ${words[row.state_before] ?? row.state_before} → ${words[row.state_after] ?? row.state_after}`));
+    return list;
+  },''));
+  blocks.push(group('异常段沿革',[...episodeDiff.retained.map((item) => `${item.id} · 保留 · ${stamp(item.start)}—${stamp(item.end)}`),
+    ...episodeDiff.extended.map((item) => `${item.after.id} · 延长 · ${stamp(item.before.end)} → ${stamp(item.after.end)}`),
+    ...episodeDiff.changed.map((item) => `${item.after.id} · 变更 · ${stamp(item.after.start)}—${stamp(item.after.end)}`),
+    ...episodeDiff.added.map((item) => `${item.id} · 新增 · ${stamp(item.start)}—${stamp(item.end)}`),
+    ...episodeDiff.dropped.map((item) => `${item.id} · 消失 · ${stamp(item.start)}—${stamp(item.end)}`)],(rows) => {
+    const list = el('ul',null,'diff-list');
+    for (const line of rows) list.append(el('li',line));
+    return list;
+  },'无异常段。'));
+  blocks.unshift(present);
+  target.replaceChildren(...blocks);
+}
+
+async function coverage({get, base, run}) {
+  const data = await get(`${base}/coverage`);
+  const snapshot = data.coverage;
+  put('#coverage-cutoff',snapshot.cutoff ? `截止 ${stamp(snapshot.cutoff)}` : '未设截止点');
+  q('#coverage-summary').replaceChildren(entries([['应监测',snapshot.expected],['已配对',snapshot.paired],
+    ['可判级',snapshot.gradable],['缺证',snapshot.ungradable],['已配对但缺证',snapshot.paired_ungradable],
+    ['截止后暂缓',snapshot.deferred],['归卷对齐',snapshot.alignment.aligned ? '同一批柜时' : '存在偏差']]));
+  const slots = snapshot.slots.map((slot) => ({...slot,reason:reasonWords(slot)}));
+  table(q('#coverage-slots'),slots,[['柜时',(slot) => stamp(slot.start),'mono'],['上层',(slot) => rowLabel(slot.upper),'num'],
+    ['下层',(slot) => rowLabel(slot.lower),'num'],['判级',(slot) => state(slot.state)],
+    ['覆盖',(slot) => slot.gradable ? '可判级' : slot.reason,'mono']]);
+  const chain = el('div',null,'history-list');
+  for (const item of data.versions) {
+    const link = jump(`v${item.version} · ${item.sample} · ${item.gradable}/${item.expected}`,'/coverage',{run:item.id});
+    if (item.id === run.id) link.setAttribute('aria-current','true');
+    const row = el('div',null,'version-row');
+    row.append(link,el('span',`截止 ${item.cutoff_utc ? stamp(item.cutoff_utc) : '—'} · 暂缓 ${item.deferred}`,'version-meta'));
+    chain.append(row);
+  }
+  q('#coverage-versions').replaceChildren(chain);
+  coverageDiff(q('#coverage-diff'),data.comparison,data.episodes);
+}
+
+export const stages = {intake, assignment, pairing, gradient, episodes, audit, coverage, archive};

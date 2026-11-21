@@ -69,4 +69,12 @@ sup { font: 10px var(--mono); color: var(--accent); }
 .history-list a[aria-current] { background: var(--accent-soft); font-weight: 700; }
 .digest-list .rule-list { grid-template-columns: minmax(70px,.35fr) minmax(0,1fr); }
 .jump-list { display: grid; gap: 4px; margin-top: 6px; }
+.version-row { display: grid; gap: 1px; border-bottom: 1px solid var(--ruling); padding: 3px; }
+.version-row:has(a[aria-current]) { background: var(--accent-soft); }
+.version-row a { border: 0; padding: 0; font-family: var(--mono); }
+.version-meta { color: var(--ink-dim); font: 10px var(--mono); }
+.diff-group { margin-top: 12px; }
+.diff-group h3 { margin: 0 0 4px; font: 700 12px var(--serif); color: var(--ink-soft); }
+.diff-list { margin: 0; padding-left: 16px; font: 11px/1.6 var(--mono); }
+.diff-list li { overflow-wrap: anywhere; }
 @media (max-width: 690px) { .cut-drawing { min-height: 298px; } }

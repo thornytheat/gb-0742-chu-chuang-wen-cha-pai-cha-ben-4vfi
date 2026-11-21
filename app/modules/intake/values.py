@@ -56,6 +56,6 @@ def parse_measurement(row, late_limit):
         humidity = scaled(raw["rh"], raw["rh_sigma"], 0, RH_SCALE[rh_unit], 1, 0, 100, 30) if humidity_present else None
     except (InvalidOperation, ArithmeticError):
         return mark(row, "isolated", "BAD_READING")
-    row.update(probe=probe, measured=measured, observed_utc=utc(measured), received_utc=utc(received),
+    row.update(probe=probe, measured=measured, received=received, observed_utc=utc(measured), received_utc=utc(received),
                celsius=temperature, relative_humidity=humidity, delay=received-measured,
                flags=["LATE_RECEIPT"] if received-measured > late_limit else [])

@@ -45,6 +45,7 @@ main { min-width: 0; flex: 1; padding: 0 18px 18px; }
   .kpi { padding: 6px; }
   .split-records { grid-template-columns: minmax(145px,.85fr) minmax(0,2fr) minmax(150px,.85fr); }
   .gradient-sheet { grid-template-columns: minmax(145px,.7fr) minmax(215px,1.1fr) minmax(205px,1fr); }
+  .coverage-sheet { grid-template-columns: minmax(150px,.75fr) minmax(0,2fr) minmax(185px,1fr); }
 }
 @media (max-width: 910px) {
   body { grid-template-columns: minmax(0, 1fr); }

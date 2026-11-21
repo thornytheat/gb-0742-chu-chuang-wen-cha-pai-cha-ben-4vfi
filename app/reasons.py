@@ -5,7 +5,7 @@ REASONS = {
     "DUPLICATE_READING": "同探头同刻等值回传", "READING_CONFLICT": "同探头同刻报告矛盾",
     "NO_DEPLOYMENT": "测量时刻无有效部署", "DEPLOYMENT_CONFLICT": "部署时间窗重叠", "OFF_SHIFT": "测量在值班时窗外",
     "LATE_RECEIPT": "收报延迟", "EXTRA_UPPER": "同柜同小时有额外上层记录", "UNUSED_LOWER": "下层记录未被配准",
-    "LOWER_CONTENTION": "下层记录已分配给相邻小时",
+    "LOWER_CONTENTION": "下层记录已分配给相邻小时", "RECEIPT_AFTER_CUTOFF": "收报晚于本版截止点，暂不采信",
 
     "MISSING_UPPER": "缺上层测量", "NO_COMPATIBLE_LOWER": "无可用下层证据", "MISSING_RH": "湿度证据不足",
     "CI_OVERLAP": "置信区间跨阈值",

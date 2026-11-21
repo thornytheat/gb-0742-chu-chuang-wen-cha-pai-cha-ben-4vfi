@@ -63,7 +63,7 @@ async function render(run, requested, records, params = new URLSearchParams()) {
   put('#shift-caption',`${run.shift} / ${run.label}`);
   put('#policy',run.policy);
   put('#shift-window',`${stamp(run.window[0])} — ${stamp(run.window[1])}`);
-  put('#generated',`归卷 ${stamp(run.created)}`);
+  put('#generated',`${run.version ? `v${run.version} · ` : ''}归卷 ${stamp(run.created)}`);
   q('#generated').dateTime = run.created;
   for (const key of ['expected','stable','abnormal','missing']) put(`#${key}`,audit.hours[key]);
   put('#isolated',audit.row_audit.isolated);
